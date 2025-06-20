@@ -8,7 +8,7 @@ namespace StockSharp.Algo.Storages.Csv;
 /// </remarks>
 /// <param name="securityId">Security ID.</param>
 /// <param name="encoding">Encoding.</param>
-public class PositionCsvSerializer(SecurityId securityId, Encoding encoding = null) : CsvMarketDataSerializer<PositionChangeMessage>(securityId, encoding)
+public class PositionCsvSerializer(SecurityId securityId, Encoding encoding) : CsvMarketDataSerializer<PositionChangeMessage>(securityId, encoding)
 {
 	private static readonly PositionChangeTypes[] _types = [.. Enumerator.GetValues<PositionChangeTypes>().OrderBy(t => (int)t)];
 	private static readonly string[] _reserved = new string[10];
@@ -20,7 +20,7 @@ public class PositionCsvSerializer(SecurityId securityId, Encoding encoding = nu
 
 		row.AddRange(
 		[
-			data.ServerTime.WriteTimeMls(),
+			data.ServerTime.WriteTime(),
 			data.ServerTime.ToString("zzz"),
 			data.PortfolioName,
 			data.ClientCode,
@@ -44,7 +44,7 @@ public class PositionCsvSerializer(SecurityId securityId, Encoding encoding = nu
 			if (type == PositionChangeTypes.ExpirationDate)
 			{
 				var date = (DateTimeOffset?)value;
-				row.AddRange([date?.WriteDate(), date?.WriteTimeMls(), date?.ToString("zzz")]);
+				row.AddRange([date?.WriteDate(), date?.WriteTime(), date?.ToString("zzz")]);
 			}
 			else
 				row.Add(value?.ToString());

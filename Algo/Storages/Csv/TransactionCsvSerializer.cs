@@ -8,15 +8,14 @@ namespace StockSharp.Algo.Storages.Csv;
 /// </remarks>
 /// <param name="securityId">Security ID.</param>
 /// <param name="encoding">Encoding.</param>
-public class TransactionCsvSerializer(SecurityId securityId, Encoding encoding = null) : CsvMarketDataSerializer<ExecutionMessage>(securityId, encoding)
+public class TransactionCsvSerializer(SecurityId securityId, Encoding encoding) : CsvMarketDataSerializer<ExecutionMessage>(securityId, encoding)
 {
-
 	/// <inheritdoc />
 	protected override void Write(CsvFileWriter writer, ExecutionMessage data, IMarketDataMetaInfo metaInfo)
 	{
 		var row = new[]
 		{
-			data.ServerTime.WriteTimeMls(),
+			data.ServerTime.WriteTime(),
 			data.ServerTime.ToString("zzz"),
 			data.TransactionId.ToString(),
 			data.OriginalTransactionId.ToString(),
@@ -61,9 +60,9 @@ public class TransactionCsvSerializer(SecurityId securityId, Encoding encoding =
 			data.Latency?.Ticks.ToString(),
 			data.Error?.Message,
 			data.ExpiryDate?.WriteDate(),
-			data.ExpiryDate?.WriteTimeMls(),
+			data.ExpiryDate?.WriteTime(),
 			data.ExpiryDate?.ToString("zzz"),
-			data.LocalTime.WriteTimeMls(),
+			data.LocalTime.WriteTime(),
 			data.LocalTime.ToString("zzz"),
 			data.IsMarketMaker.To<int?>().ToString(),
 			data.CommissionCurrency,

@@ -1,46 +1,21 @@
 namespace StockSharp.Algo.Storages.Csv;
 
-/// <summary>
-/// CSV helper class.
-/// </summary>
 static class CsvHelper
 {
-	/// <summary>
-	/// <see cref="DateTime"/> format.
-	/// </summary>
-	public const string DateFormat = "yyyyMMdd";
+	private const string _dateFormat = "yyyyMMdd";
+	private const string _tsFormat = "hhmmss";
+	private const string _timeMlsFormat = _tsFormat + "fff";
+	private const string _timeFormat = _timeMlsFormat + "ffff";
+	private const string _dateTimeFormat = "yyyyMMddHHmmss";
+	private const string _dateTimeFormatEx = "yyyyMMddHHmmssfffffff";
 
-	/// <summary>
-	/// <see cref="TimeSpan"/> format with milliseconds.
-	/// </summary>
-	public const string TimeMlsFormat = "hhmmssfff";
+	private static readonly FastDateTimeParser _dateParser = new(_dateFormat);
+	private static readonly FastTimeSpanParser _tsParser = new(_tsFormat);
+	private static readonly FastTimeSpanParser _timeMlsParser = new(_timeMlsFormat);
+	private static readonly FastTimeSpanParser _timeParser = new(_timeFormat);
+	private static readonly FastDateTimeParser _dateTimeParser = new(_dateTimeFormat);
+	private static readonly FastDateTimeParser _dateTimeParserEx = new(_dateTimeFormatEx);
 
-	/// <summary>
-	/// <see cref="TimeSpan"/> format.
-	/// </summary>
-	public const string TimeFormat = "hhmmss";
-
-	/// <summary>
-	/// <see cref="DateTime"/> parser.
-	/// </summary>
-	public static readonly FastDateTimeParser DateParser = new(DateFormat);
-
-	/// <summary>
-	/// <see cref="TimeSpan"/> parser.
-	/// </summary>
-	public static readonly FastTimeSpanParser TimeMlsParser = new(TimeMlsFormat);
-
-	/// <summary>
-	/// <see cref="TimeSpan"/> parser.
-	/// </summary>
-	public static readonly FastTimeSpanParser TimeParser = new(TimeFormat);
-
-	/// <summary>
-	/// Read <see cref="DateTimeOffset"/>.
-	/// </summary>
-	/// <param name="reader">CSV reader.</param>
-	/// <param name="date">Date.</param>
-	/// <returns><see cref="DateTimeOffset"/>.</returns>
 	public static DateTimeOffset ReadTime(this FastCsvReader reader, DateTime date)
 	{
 		if (reader == null)
@@ -49,39 +24,35 @@ static class CsvHelper
 		return (date + reader.ReadString().ToTimeMls()).ToDateTimeOffset(TimeSpan.Parse(reader.ReadString().Remove("+")));
 	}
 
-	public static string WriteTimeMls(this TimeSpan time)
-	{
-		return time.ToString(TimeMlsFormat);
-	}
-
 	public static string WriteTime(this TimeSpan time)
 	{
-		return time.ToString(TimeFormat);
+		return time.ToString(_tsFormat);
 	}
 
-	public static string WriteTimeMls(this DateTimeOffset time)
+	public static string WriteTime(this DateTimeOffset time)
 	{
-		return time.UtcDateTime.TimeOfDay.WriteTimeMls();
+		return time.UtcDateTime.TimeOfDay.ToString(_timeFormat);
 	}
 
 	public static string WriteDate(this DateTimeOffset time)
 	{
-		return time.UtcDateTime.ToString(DateFormat);
+		return time.UtcDateTime.ToString(_dateFormat);
 	}
 
 	public static TimeSpan ToTimeMls(this string str)
 	{
-		return TimeMlsParser.Parse(str);
+		var parser = str.Length == _timeMlsFormat.Length ? _timeMlsParser : _timeParser;
+		return parser.Parse(str);
 	}
 
 	public static TimeSpan ToTime(this string str)
 	{
-		return TimeParser.Parse(str);
+		return _tsParser.Parse(str);
 	}
 
 	public static DateTime ToDateTime(this string str)
 	{
-		return DateParser.Parse(str);
+		return _dateParser.Parse(str);
 	}
 
 	private static readonly string[] _emptyDataType = new string[4];
@@ -112,9 +83,6 @@ static class CsvHelper
 		return str.To<int>().ToDataType(reader.ReadLong(), reader.ReadDecimal(), reader.ReadInt());
 	}
 
-	private const string _dateTimeFormat = "yyyyMMddHHmmss";
-	private static readonly FastDateTimeParser _dateTimeParser = new(_dateTimeFormat);
-
 	public static DateTimeOffset? ReadNullableDateTime(this FastCsvReader reader)
 	{
 		var str = reader.ReadString();
@@ -125,17 +93,24 @@ static class CsvHelper
 		return _dateTimeParser.Parse(str).UtcKind();
 	}
 
+	public static DateTimeOffset? ReadNullableDateTimeEx(this FastCsvReader reader)
+	{
+		var str = reader.ReadString();
+
+		if (str.IsEmpty())
+			return null;
+
+		return _dateTimeParserEx.Parse(str).UtcKind();
+	}
+
 	public static DateTimeOffset ReadDateTime(this FastCsvReader reader)
 		=> reader.ReadNullableDateTime().Value;
-
-	public static string WriteNullableDateTime(this DateTimeOffset? dto)
-		=> dto?.WriteDateTime();
 
 	public static string WriteDateTime(this DateTimeOffset dto)
 		=> dto.UtcDateTime.ToString(_dateTimeFormat);
 
-	public static FastCsvReader CreateCsvReader(this Stream stream, Encoding encoding)
-		=> new(stream, encoding, StringHelper.RN);
+	public static string WriteDateTimeEx(this DateTimeOffset dto)
+		=> dto.UtcDateTime.ToString(_dateTimeFormatEx);
 
 	public static SecurityMessage ReadSecurity(this FastCsvReader reader)
 	{

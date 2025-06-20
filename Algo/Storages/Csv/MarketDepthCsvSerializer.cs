@@ -1,6 +1,6 @@
 namespace StockSharp.Algo.Storages.Csv;
 
-class MarketDepthCsvSerializer(SecurityId securityId) : CsvMarketDataSerializer<QuoteChangeMessage>(securityId)
+class MarketDepthCsvSerializer(SecurityId securityId, Encoding encoding) : CsvMarketDataSerializer<QuoteChangeMessage>(securityId, encoding)
 {
 	private class QuoteEnumerable : SimpleEnumerable<QuoteChangeMessage>
 	{
@@ -37,10 +37,8 @@ class MarketDepthCsvSerializer(SecurityId securityId) : CsvMarketDataSerializer<
 
 				do
 				{
-					var quote = enumerator.Current;
-
-					if (quote == null)
-						throw new InvalidOperationException("quote == null");
+					var quote = enumerator.Current
+						?? throw new InvalidOperationException("quote == null");
 
 					if (Current == null)
 					{
@@ -113,14 +111,14 @@ class MarketDepthCsvSerializer(SecurityId securityId) : CsvMarketDataSerializer<
 		}
 	}
 
-	private readonly CsvMarketDataSerializer<NullableTimeQuoteChange> _quoteSerializer = new QuoteCsvSerializer(securityId);
+	private readonly CsvMarketDataSerializer<NullableTimeQuoteChange> _quoteSerializer = new QuoteCsvSerializer(securityId, encoding);
 
 	public override IMarketDataMetaInfo CreateMetaInfo(DateTime date)
 	{
 		return _quoteSerializer.CreateMetaInfo(date);
 	}
 
-	private NullableTimeQuoteChange ToNullQuote(Sides side, QuoteChange quote, QuoteChangeMessage message)
+	private static NullableTimeQuoteChange ToNullQuote(Sides side, QuoteChange quote, QuoteChangeMessage message)
 	{
 		if (message is null)
 			throw new ArgumentNullException(nameof(message));
@@ -149,12 +147,12 @@ class MarketDepthCsvSerializer(SecurityId securityId) : CsvMarketDataSerializer<
 				if (incOnly.Value)
 				{
 					if (d.State == null)
-						throw new InvalidOperationException(LocalizedStrings.StorageRequiredIncremental.Put(true));
+						throw new ArgumentException(LocalizedStrings.StorageRequiredIncremental.Put(true), nameof(data));
 				}
 				else
 				{
 					if (d.State != null)
-						throw new InvalidOperationException(LocalizedStrings.StorageRequiredIncremental.Put(false));
+						throw new ArgumentException(LocalizedStrings.StorageRequiredIncremental.Put(false), nameof(data));
 				}
 			}
 

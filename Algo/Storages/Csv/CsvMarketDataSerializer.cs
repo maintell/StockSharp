@@ -39,7 +39,7 @@ class CsvMetaInfo(DateTime date, Encoding encoding, Func<FastCsvReader, object> 
 			var firstTimeRead = false;
 			string lastLine = null;
 
-			var reader = new FastCsvReader(stream, _encoding, StringHelper.RN);
+			var reader = stream.CreateCsvReader(_encoding);
 
 			while (reader.NextLine())
 			{
@@ -79,15 +79,11 @@ class CsvMetaInfo(DateTime date, Encoding encoding, Func<FastCsvReader, object> 
 /// <typeparam name="TData">Data type.</typeparam>
 public abstract class CsvMarketDataSerializer<TData> : IMarketDataSerializer<TData>
 {
-	// ReSharper disable StaticFieldInGenericType
-	private static readonly UTF8Encoding _utf = new(false);
-	// ReSharper restore StaticFieldInGenericType
-
 	/// <summary>
 	/// Initializes a new instance of the <see cref="CsvMarketDataSerializer{T}"/>.
 	/// </summary>
 	/// <param name="encoding">Encoding.</param>
-	protected CsvMarketDataSerializer(Encoding encoding = null)
+	protected CsvMarketDataSerializer(Encoding encoding)
 		: this(default, encoding)
 	{
 	}
@@ -97,13 +93,13 @@ public abstract class CsvMarketDataSerializer<TData> : IMarketDataSerializer<TDa
 	/// </summary>
 	/// <param name="securityId">Security ID.</param>
 	/// <param name="encoding">Encoding.</param>
-	protected CsvMarketDataSerializer(SecurityId securityId, Encoding encoding = null)
+	protected CsvMarketDataSerializer(SecurityId securityId, Encoding encoding)
 	{
 		// force hash code caching
 		securityId.GetHashCode();
 
 		SecurityId = securityId;
-		Encoding = encoding ?? _utf;
+		Encoding = encoding ?? throw new ArgumentNullException(nameof(encoding));
 	}
 
 	/// <summary>
@@ -124,7 +120,7 @@ public abstract class CsvMarketDataSerializer<TData> : IMarketDataSerializer<TDa
 	/// <summary>
 	/// Time precision.
 	/// </summary>
-	public TimeSpan TimePrecision { get; } = TimeSpan.FromMilliseconds(1);
+	public TimeSpan TimePrecision { get; } = TimeSpan.FromTicks(1);
 
 	/// <summary>
 	/// To create empty meta-information.
@@ -216,7 +212,7 @@ public abstract class CsvMarketDataSerializer<TData> : IMarketDataSerializer<TDa
 		//	new CsvReader(copy, _encoding, SecurityId, metaInfo.Date.Date, _executionType, _candleArg, _members))
 		//	.ToEx(metaInfo.Count);
 
-		return new SimpleEnumerable<TData>(() => new CsvEnumerator(this, new FastCsvReader(copy, Encoding, StringHelper.RN), metaInfo));
+		return new SimpleEnumerable<TData>(() => new CsvEnumerator(this, copy.CreateCsvReader(Encoding), metaInfo));
 	}
 
 	/// <summary>

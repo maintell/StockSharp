@@ -379,8 +379,10 @@ partial class Connector
 			if (subscriptions is null)
 				throw new ArgumentNullException(nameof(subscriptions));
 
-			var missingSubscriptions = subscriptions
-				.Where(sub => !_subscriptions.ContainsKey(sub.TransactionId) && !Subscriptions.Any(s => s.DataType == sub.DataType && s.To == null));
+			Subscription[] missingSubscriptions;
+
+			lock (_syncObject)
+				missingSubscriptions = [.. subscriptions.Where(sub => (!_wasConnected || !_connector.SubscriptionsOnConnect.Contains(sub)) && !_subscriptions.ContainsKey(sub.TransactionId) && !Subscriptions.Any(s => s.DataType == sub.DataType && s.To == null))];
 
 			if (_wasConnected)
 			{
@@ -435,13 +437,13 @@ partial class Connector
 				_keeped.Clear();
 				_subscriptions.Clear();
 
-				foreach (var pair in requests)
-					_subscriptions.Add(pair.Value.Subscription.TransactionId, pair.Value);
+				foreach (var (_, info) in requests)
+					_subscriptions.Add(info.Subscription.TransactionId, info);
 			}
 
-			foreach (var pair in requests)
+			foreach (var (subMsg, info) in requests)
 			{
-				SendRequest(pair.Key, pair.Value.Subscription, false);
+				SendRequest(subMsg, info.Subscription, false);
 			}
 		}
 

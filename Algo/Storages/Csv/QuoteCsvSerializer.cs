@@ -19,9 +19,8 @@ class NullableTimeQuoteChange
 /// </remarks>
 /// <param name="securityId">Security ID.</param>
 /// <param name="encoding">Encoding.</param>
-class QuoteCsvSerializer(SecurityId securityId, Encoding encoding = null) : CsvMarketDataSerializer<NullableTimeQuoteChange>(securityId, encoding)
+class QuoteCsvSerializer(SecurityId securityId, Encoding encoding) : CsvMarketDataSerializer<NullableTimeQuoteChange>(securityId, encoding)
 {
-
 	/// <inheritdoc />
 	public override IMarketDataMetaInfo CreateMetaInfo(DateTime date)
 	{
@@ -42,7 +41,7 @@ class QuoteCsvSerializer(SecurityId securityId, Encoding encoding = null) : CsvM
 
 		writer.WriteRow(new[]
 		{
-			data.ServerTime.WriteTimeMls(),
+			data.ServerTime.WriteTime(),
 			data.ServerTime.ToString("zzz"),
 			quote?.Price.To<string>(),
 			quote?.Volume.To<string>(),

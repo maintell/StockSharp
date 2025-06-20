@@ -8,7 +8,7 @@ namespace StockSharp.Algo.Storages.Csv;
 /// </remarks>
 /// <param name="securityId">Security ID.</param>
 /// <param name="encoding">Encoding.</param>
-public class OrderLogCsvSerializer(SecurityId securityId, Encoding encoding = null) : CsvMarketDataSerializer<ExecutionMessage>(securityId, encoding)
+public class OrderLogCsvSerializer(SecurityId securityId, Encoding encoding) : CsvMarketDataSerializer<ExecutionMessage>(securityId, encoding)
 {
 	/// <inheritdoc />
 	public override IMarketDataMetaInfo CreateMetaInfo(DateTime date)
@@ -21,7 +21,7 @@ public class OrderLogCsvSerializer(SecurityId securityId, Encoding encoding = nu
 	{
 		writer.WriteRow(
 		[
-			data.ServerTime.WriteTimeMls(),
+			data.ServerTime.WriteTime(),
 			data.ServerTime.ToString("zzz"),
 			data.TransactionId.ToString(),
 			data.OrderId.ToString(),

@@ -59,13 +59,45 @@ abstract class BinaryMetaInfo : MetaInfo
 	public TimeSpan ServerOffset { get; set; }
 
 	// сериализация и десериализация их полей сделана в дочерних классах
-	public decimal FirstPrice { get; set; }
+	private decimal _firstPrice;
+	public decimal FirstPrice
+	{
+		get => _firstPrice;
+		set
+		{
+			_firstPrice = value;
+			IsFirstPriceSet = true;
+		}
+	}
 	public decimal LastPrice { get; set; }
-	public decimal FirstFractionalPrice { get; set; }
+
+	private decimal _firstFractionalPrice;
+	public decimal FirstFractionalPrice
+	{
+		get => _firstFractionalPrice;
+		set
+		{
+			_firstFractionalPrice = value;
+			IsFirstFractionalPriceSet = true;
+		}
+	}
 	public decimal LastFractionalPrice { get; set; }
-	
-	public decimal FirstFractionalVolume { get; set; }
+
+	private decimal _firstFractionalVolume;
+	public decimal FirstFractionalVolume
+	{
+		get => _firstFractionalVolume;
+		set
+		{
+			_firstFractionalVolume = value;
+			IsFirstFractionalVolumeSet = true;
+		}
+	}
 	public decimal LastFractionalVolume { get; set; }
+
+	public bool IsFirstPriceSet { get; private set; }
+	public bool IsFirstFractionalPriceSet { get; private set; }
+	public bool IsFirstFractionalVolumeSet { get; private set; }
 
 	public DateTime FirstLocalTime { get; set; }
 	public DateTime LastLocalTime { get; set; }
@@ -459,8 +491,11 @@ abstract class BinaryMarketDataSerializer<TData, TMetaInfo> : IMarketDataSeriali
 		var typedInfo = (TMetaInfo)metaInfo;
 		CheckVersion(typedInfo, "Load");
 
-		var data = stream.To<byte[]>();
+		var data = new MemoryStream();
+		stream.CopyTo(data);
 		stream.Dispose();
+
+		data.Position = 0;
 
 		return new SimpleEnumerable<TData>(() => new MarketDataEnumerator(this, new BitArrayReader(data), typedInfo));
 	}
@@ -468,14 +503,14 @@ abstract class BinaryMarketDataSerializer<TData, TMetaInfo> : IMarketDataSeriali
 	protected abstract void OnSave(BitArrayWriter writer, IEnumerable<TData> data, TMetaInfo metaInfo);
 	public abstract TData MoveNext(MarketDataEnumerator enumerator);
 
-	protected void WriteItemLocalTime(BitArrayWriter writer, TMetaInfo metaInfo, Message message, bool isTickPrecision)
+	protected static void WriteItemLocalTime(BitArrayWriter writer, TMetaInfo metaInfo, Message message, bool isTickPrecision)
 	{
 		var lastLocalOffset = metaInfo.LastItemLocalOffset;
 		metaInfo.LastItemLocalTime = writer.WriteTime(message.LocalTime, metaInfo.LastItemLocalTime, "local time", true, true, metaInfo.LocalOffset, true, isTickPrecision, ref lastLocalOffset, true);
 		metaInfo.LastItemLocalOffset = lastLocalOffset;
 	}
 
-	protected DateTimeOffset ReadItemLocalTime(BitArrayReader reader, TMetaInfo metaInfo, bool isTickPrecision)
+	protected static DateTimeOffset ReadItemLocalTime(BitArrayReader reader, TMetaInfo metaInfo, bool isTickPrecision)
 	{
 		var prevTsTime = metaInfo.FirstItemLocalTime;
 		var lastOffset = metaInfo.FirstItemLocalOffset;

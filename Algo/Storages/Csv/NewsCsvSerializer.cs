@@ -3,16 +3,18 @@ namespace StockSharp.Algo.Storages.Csv;
 /// <summary>
 /// The news serializer in the CSV format.
 /// </summary>
-public class NewsCsvSerializer : CsvMarketDataSerializer<NewsMessage>
+/// <remarks>
+/// Initializes a new instance of the <see cref="BoardStateCsvSerializer"/>.
+/// </remarks>
+/// <param name="encoding">Encoding.</param>
+public class NewsCsvSerializer(Encoding encoding) : CsvMarketDataSerializer<NewsMessage>(encoding)
 {
-	private const string _expiryFormat = "yyyyMMddHHmmssfff zzz";
-
 	/// <inheritdoc />
 	protected override void Write(CsvFileWriter writer, NewsMessage data, IMarketDataMetaInfo metaInfo)
 	{
 		writer.WriteRow(
 		[
-			data.ServerTime.WriteTimeMls(),
+			data.ServerTime.WriteTime(),
 			data.ServerTime.ToString("zzz"),
 			data.Headline,
 			data.Source,
@@ -23,7 +25,7 @@ public class NewsCsvSerializer : CsvMarketDataSerializer<NewsMessage>
 			data.Priority?.To<string>(),
 			data.Language,
 			data.SecurityId?.BoardCode,
-			data.ExpiryDate?.ToString(_expiryFormat),
+			data.ExpiryDate?.WriteDateTimeEx(),
 			data.SeqNum.DefaultAsNull().ToString(),
 		]);
 
@@ -67,7 +69,7 @@ public class NewsCsvSerializer : CsvMarketDataSerializer<NewsMessage>
 		}
 
 		if ((reader.ColumnCurr + 1) < reader.ColumnCount)
-			news.ExpiryDate = reader.ReadString().TryToDateTimeOffset(_expiryFormat);
+			news.ExpiryDate = reader.ReadNullableDateTimeEx();
 
 		if ((reader.ColumnCurr + 1) < reader.ColumnCount)
 			news.SeqNum = reader.ReadNullableLong() ?? 0L;

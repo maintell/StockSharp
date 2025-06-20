@@ -8,7 +8,7 @@ namespace StockSharp.Algo.Storages.Csv;
 /// </remarks>
 /// <param name="securityId">Security ID.</param>
 /// <param name="encoding">Encoding.</param>
-public class Level1CsvSerializer(SecurityId securityId, Encoding encoding = null) : CsvMarketDataSerializer<Level1ChangeMessage>(securityId, encoding)
+public class Level1CsvSerializer(SecurityId securityId, Encoding encoding) : CsvMarketDataSerializer<Level1ChangeMessage>(securityId, encoding)
 {
 	private static readonly Dictionary<Level1Fields, Type> _level1Fields = Enumerator.GetValues<Level1Fields>().ExcludeObsolete().OrderBy(l1 => (int)l1).ToDictionary(f => f, f => f.ToType());
 	private static readonly string[] _reserved = new string[9];
@@ -18,7 +18,7 @@ public class Level1CsvSerializer(SecurityId securityId, Encoding encoding = null
 	{
 		var row = new List<string>();
 
-		row.AddRange([data.ServerTime.WriteTimeMls(), data.ServerTime.ToString("zzz")]);
+		row.AddRange([data.ServerTime.WriteTime(), data.ServerTime.ToString("zzz")]);
 
 		row.AddRange(data.BuildFrom.ToCsv());
 
@@ -35,7 +35,7 @@ public class Level1CsvSerializer(SecurityId securityId, Encoding encoding = null
 			if (pair.Value == typeof(DateTimeOffset))
 			{
 				var date = (DateTimeOffset?)data.TryGet(field);
-				row.AddRange([date?.WriteDate(), date?.WriteTimeMls(), date?.ToString("zzz")]);
+				row.AddRange([date?.WriteDate(), date?.WriteTime(), date?.ToString("zzz")]);
 			}
 			else
 			{

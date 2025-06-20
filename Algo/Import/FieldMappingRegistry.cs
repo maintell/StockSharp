@@ -12,11 +12,11 @@ public static class FieldMappingRegistry
 	/// <returns>Importing fields.</returns>
 	public static IEnumerable<FieldMapping> CreateFields(DataType dataType)
 	{
-		var secCodeDescr = () => LocalizedStrings.SecCodeDescription;
-		var boardCodeDescr = () => LocalizedStrings.BoardCodeDescription;
+		string secCodeDescr() => LocalizedStrings.SecCodeDescription;
+		string boardCodeDescr() => LocalizedStrings.BoardCodeDescription;
 
-		var dateDescr = () => LocalizedStrings.DateDescription;
-		var timeDescr = () => LocalizedStrings.TimeDescription;
+		string dateDescr() => LocalizedStrings.DateDescription;
+		string timeDescr() => LocalizedStrings.TimeDescription;
 
 		var fields = new List<FieldMapping>();
 		var msgType = dataType.MessageType;
@@ -142,6 +142,8 @@ public static class FieldMappingRegistry
 					fields.Add(new FieldMapping<ExecutionMessage, bool>(nameof(ExecutionMessage.Initiator), () => LocalizedStrings.Initiator, () => LocalizedStrings.InitiatorTrade, (i, v) => i.Initiator = v) { IsRequired = false });
 					fields.Add(new FieldMapping<ExecutionMessage, long>(nameof(ExecutionMessage.SeqNum), () => LocalizedStrings.SeqNum, () => LocalizedStrings.SequenceNumber, (i, v) => i.SeqNum = v) { IsRequired = false });
 					fields.Add(new FieldMapping<ExecutionMessage, int>(nameof(ExecutionMessage.Leverage), () => LocalizedStrings.Leverage, () => LocalizedStrings.MarginLeverage, (i, v) => i.Leverage = v) { IsRequired = false });
+					fields.Add(new FieldMapping<ExecutionMessage, decimal>(nameof(ExecutionMessage.TradePrice), () => LocalizedStrings.Price, () => LocalizedStrings.Price, (i, v) => i.TradePrice = v) { IsRequired = true });
+					fields.Add(new FieldMapping<ExecutionMessage, decimal>(nameof(ExecutionMessage.TradeVolume), () => LocalizedStrings.Volume, () => LocalizedStrings.Volume, (i, v) => i.TradeVolume = v) { IsRequired = true });
 
 					break;
 				}
@@ -288,6 +290,18 @@ public static class FieldMappingRegistry
 			fields.Add(new FieldMapping<NewsMessage, string>(nameof(NewsMessage.Url), () => LocalizedStrings.Link, () => LocalizedStrings.NewsLink, (i, v) => i.Url = v));
 			fields.Add(new FieldMapping<NewsMessage, NewsPriorities>(nameof(NewsMessage.Priority), () => LocalizedStrings.Priority, () => LocalizedStrings.NewsPriority, (i, v) => i.Priority = v));
 			fields.Add(new FieldMapping<NewsMessage, string>(nameof(NewsMessage.Language), () => LocalizedStrings.Language, () => LocalizedStrings.Language, (i, v) => i.Language = v));
+		}
+		else if (msgType == typeof(BoardMessage))
+		{
+			fields.Add(new FieldMapping<BoardMessage, string>(nameof(BoardMessage.Code), () => LocalizedStrings.Board, () => LocalizedStrings.BoardCode, (i, v) => i.Code = v) { IsRequired = true });
+			fields.Add(new FieldMapping<BoardMessage, string>(nameof(BoardMessage.ExchangeCode), () => LocalizedStrings.Exchange, () => LocalizedStrings.ExchangeBoardDesc, (i, v) => i.ExchangeCode = v) { IsRequired = true });
+		}
+		else if (msgType == typeof(BoardStateMessage))
+		{
+			fields.Add(new FieldMapping<BoardStateMessage, DateTimeOffset>(GetDateField(nameof(BoardStateMessage.ServerTime)), () => LocalizedStrings.Date, dateDescr, (i, v) => i.ServerTime = v + i.ServerTime.TimeOfDay) { IsRequired = true });
+			fields.Add(new FieldMapping<BoardStateMessage, TimeSpan>(GetTimeOfDayField(nameof(BoardStateMessage.ServerTime)), () => LocalizedStrings.Time, timeDescr, (i, v) => i.ServerTime += v));
+			fields.Add(new FieldMapping<BoardStateMessage, string>(nameof(BoardStateMessage.BoardCode), () => LocalizedStrings.Board, () => LocalizedStrings.BoardCode, (i, v) => i.BoardCode = v));
+			fields.Add(new FieldMapping<BoardStateMessage, SessionStates>(nameof(BoardStateMessage.State), () => LocalizedStrings.State, () => LocalizedStrings.State, (i, v) => i.State = v));
 		}
 		else
 			throw new ArgumentOutOfRangeException(nameof(dataType), dataType, LocalizedStrings.InvalidValue);

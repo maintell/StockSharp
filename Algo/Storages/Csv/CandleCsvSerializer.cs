@@ -10,19 +10,11 @@ namespace StockSharp.Algo.Storages.Csv;
 /// <param name="securityId">Security ID.</param>
 /// <param name="dataType"><see cref="DataType"/>.</param>
 /// <param name="encoding">Encoding.</param>
-public class CandleCsvSerializer<TCandleMessage>(SecurityId securityId, DataType dataType, Encoding encoding = null) : CsvMarketDataSerializer<TCandleMessage>(securityId, encoding)
+public class CandleCsvSerializer<TCandleMessage>(SecurityId securityId, DataType dataType, Encoding encoding) : CsvMarketDataSerializer<TCandleMessage>(securityId, encoding)
 	where TCandleMessage : CandleMessage, new()
 {
-	private class CandleCsvMetaInfo(CandleCsvSerializer<TCandleMessage> serializer, DateTime date, Encoding encoding) : MetaInfo(date)
-		//where TCandleMessage : CandleMessage, new()
+	private class CandleCsvMetaInfo(CandleCsvSerializer<TCandleMessage> serializer, DateTime date) : MetaInfo(date)
 	{
-		private readonly Dictionary<DateTime, TCandleMessage> _items = [];
-		private readonly Encoding _encoding = encoding ?? throw new ArgumentNullException(nameof(encoding));
-
-		private bool _isOverride;
-
-		public override bool IsOverride => _isOverride;
-
 		public override object LastId { get; set; }
 
 		public override void Write(Stream stream)
@@ -36,15 +28,13 @@ public class CandleCsvSerializer<TCandleMessage>(SecurityId securityId, DataType
 				var count = 0;
 				var firstTimeRead = false;
 
-				var reader = new FastCsvReader(stream, _encoding, StringHelper.RN);
+				var reader = stream.CreateCsvReader(serializer.Encoding);
 
 				while (reader.NextLine())
 				{
 					var message = serializer.Read(reader, this);
 
 					var openTime = message.OpenTime.UtcDateTime;
-
-					_items[openTime] = message;
 
 					if (!firstTimeRead)
 					{
@@ -67,22 +57,14 @@ public class CandleCsvSerializer<TCandleMessage>(SecurityId securityId, DataType
 		{
 			messages = [.. messages];
 
-			if (messages.IsEmpty())
-				return [];
-
 			foreach (var message in messages)
 			{
 				var openTime = message.OpenTime.UtcDateTime;
 
-				if (!_isOverride)
-					_isOverride = _items.ContainsKey(openTime) || openTime <= LastTime;
-
-				_items[openTime] = message;
-
 				LastTime = openTime;
 			}
 
-			return _isOverride ? _items.Values : messages;
+			return messages;
 		}
 	}
 
@@ -91,7 +73,7 @@ public class CandleCsvSerializer<TCandleMessage>(SecurityId securityId, DataType
 	/// <inheritdoc />
 	public override IMarketDataMetaInfo CreateMetaInfo(DateTime date)
 	{
-		return new CandleCsvMetaInfo(this, date, Encoding);
+		return new CandleCsvMetaInfo(this, date);
 	}
 
 	/// <inheritdoc />
@@ -127,7 +109,7 @@ public class CandleCsvSerializer<TCandleMessage>(SecurityId securityId, DataType
 
 		writer.WriteRow(new[]
 		{
-			data.OpenTime.WriteTimeMls(),
+			data.OpenTime.WriteTime(),
 			data.OpenTime.ToString("zzz"),
 			data.OpenPrice.ToString(),
 			data.HighPrice.ToString(),
